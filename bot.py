@@ -6,12 +6,11 @@ Description:
 Version: 6.3.0
 """
 
-import json
 import logging
 import os
+import pathlib
 import platform
 import random
-import sys
 
 import aiosqlite
 import discord
@@ -151,19 +150,28 @@ class DiscordBot(commands.Bot):
 
     async def load_cogs(self) -> None:
         """
-        The code in this function is executed whenever the bot will start.
+        Loads all cogs from the cogs directory and its subdirectories.
         """
-        for file in os.listdir(f"{os.path.realpath(os.path.dirname(__file__))}/cogs"):
-            if file.endswith(".py"):
-                extension = file[:-3]
-                try:
-                    await self.load_extension(f"cogs.{extension}")
-                    self.logger.info(f"Loaded extension '{extension}'")
-                except Exception as e:
-                    exception = f"{type(e).__name__}: {e}"
-                    self.logger.error(
-                        f"Failed to load extension {extension}\n{exception}"
-                    )
+
+        cogs_dir = pathlib.Path(os.path.realpath(os.path.dirname(__file__))) / "cogs"
+
+        async def load_from_dir(directory, prefix="cogs"):
+            for entry in directory.iterdir():
+                if entry.is_file() and entry.suffix == ".py":
+                    extension = f"{prefix}.{entry.stem}"
+                    try:
+                        await self.load_extension(extension)
+                        self.logger.info(f"Loaded extension '{extension}'")
+                    except Exception as e:
+                        exception = f"{type(e).__name__}: {e}"
+                        self.logger.error(
+                            f"Failed to load extension {extension}\n{exception}"
+                        )
+                elif entry.is_dir():
+                    await load_from_dir(entry, f"{prefix}.{entry.name}")
+
+        await load_from_dir(cogs_dir)
+
 
     @tasks.loop(minutes=1.0)
     async def status_task(self) -> None:

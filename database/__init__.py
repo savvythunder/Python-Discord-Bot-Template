@@ -94,3 +94,166 @@ class DatabaseManager:
             for row in result:
                 result_list.append(row)
             return result_list
+    async def is_command_enabled(self, server_id: int, command: str) -> bool:
+        """
+        This function checks if a command is enabled for a server.
+
+        :param server_id: The ID of the server.
+        :param command: The command to check.
+        :return: True if the command is enabled, False otherwise.
+        """
+        rows = await self.connection.execute(
+            "SELECT COUNT(*) FROM disabled_commands WHERE server_id=? AND command=?",
+            (server_id, command),
+        )
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] == 0 if result else True
+    async def is_command_disabled(self, server_id: int, command: str) -> bool:
+        """
+        This function checks if a command is disabled for a server.
+
+        :param server_id: The ID of the server.
+        :param command: The command to check.
+        :return: True if the command is disabled, False otherwise.
+        """
+        rows = await self.connection.execute(
+            "SELECT COUNT(*) FROM disabled_commands WHERE server_id=? AND command=?",
+            (server_id, command),
+        )
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] > 0 if result else False
+    async def disable_command(self, server_id: int, command: str) -> None:
+        """
+        This function disables a command for a server.
+
+        :param server_id: The ID of the server.
+        :param command: The command to disable.
+        """
+        await self.connection.execute(
+            "INSERT OR IGNORE INTO disabled_commands(server_id, command) VALUES (?, ?)",
+            (server_id, command),
+        )
+        await self.connection.commit()
+    async def enable_command(self, server_id: int, command: str) -> None:
+        """
+        This function enables a command for a server.
+
+        :param server_id: The ID of the server.
+        :param command: The command to enable.
+        """
+        await self.connection.execute(
+            "DELETE FROM disabled_commands WHERE server_id=? AND command=?",
+            (server_id, command),
+        )
+        await self.connection.commit()
+    async def get_disabled_commands(self, server_id: int) -> list:
+        """
+        This function gets all the disabled commands for a server.
+
+        :param server_id: The ID of the server.
+        :return: A list of all the disabled commands for the server.
+        """
+        rows = await self.connection.execute(
+            "SELECT command FROM disabled_commands WHERE server_id=?",
+            (server_id,),
+        )
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return [row[0] for row in result] if result else []
+    async def is_cog_enabled(self, server_id: int, cog: str) -> bool:
+        """
+        This function checks if a cog is enabled for a server.
+
+        :param server_id: The ID of the server.
+        :param cog: The cog to check.
+        :return: True if the cog is enabled, False otherwise.
+        """
+        rows = await self.connection.execute(
+            "SELECT COUNT(*) FROM disabled_cogs WHERE server_id=? AND cog=?",
+            (server_id, cog),
+        )
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] == 0 if result else True
+    async def is_cog_disabled(self, server_id: int, cog: str) -> bool:
+        """
+        This function checks if a cog is disabled for a server.
+
+        :param server_id: The ID of the server.
+        :param cog: The cog to check.
+        :return: True if the cog is disabled, False otherwise.
+        """
+        rows = await self.connection.execute(
+            "SELECT COUNT(*) FROM disabled_cogs WHERE server_id=? AND cog=?",
+            (server_id, cog),
+        )
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] > 0 if result else False
+    async def enable_cog(self, server_id: int, cog: str) -> None:
+        """
+        This function enables a cog for a server.
+
+        :param server_id: The ID of the server.
+        :param cog: The cog to enable.
+        """
+        await self.connection.execute(
+            "DELETE FROM disabled_cogs WHERE server_id=? AND cog=?",
+            (server_id, cog),
+        )
+        await self.connection.commit()
+    async def disable_cog(self, server_id: int, cog: str) -> None:
+        """
+        This function disables a cog for a server.
+
+        :param server_id: The ID of the server.
+        :param cog: The cog to disable.
+        """
+        await self.connection.execute(
+            "INSERT OR IGNORE INTO disabled_cogs(server_id, cog) VALUES (?, ?)",
+            (server_id, cog),
+        )
+        await self.connection.commit()
+    async def get_disabled_cogs(self, server_id: int) -> list:
+        """
+        This function gets all the disabled cogs for a server.
+
+        :param server_id: The ID of the server.
+        :return: A list of all the disabled cogs for the server.
+        """
+        rows = await self.connection.execute(
+            "SELECT cog FROM disabled_cogs WHERE server_id=?",
+            (server_id,),
+        )
+        async with rows as cursor:
+            result = await cursor.fetchall()
+            return [row[0] for row in result] if result else []
+    async def set_prefix(self, server_id: int, prefix: str) -> None:
+        """
+        This function sets the prefix for a server.
+
+        :param server_id: The ID of the server.
+        :param prefix: The prefix to set.
+        """
+        await self.connection.execute(
+            "INSERT OR REPLACE INTO prefixes(server_id, prefix) VALUES (?, ?)",
+            (server_id, prefix),
+        )
+        await self.connection.commit()
+
+    async def get_prefix(self, server_id: int) -> str:
+        """
+        This function gets the prefix for a server.
+
+        :param server_id: The ID of the server.
+        :return: The prefix for the server.
+        """
+        rows = await self.connection.execute(
+            "SELECT prefix FROM prefixes WHERE server_id=?",
+            (server_id,),
+        )
+        async with rows as cursor:
+            result = await cursor.fetchone()
+            return result[0] if result else None
